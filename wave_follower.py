@@ -43,7 +43,10 @@ def cost(xList, uList):
 # Generate path list.
 def path(xcoord):
     # ycoord = np.cos( xcoord );
-    ycoord = 0.25*np.cos( xcoord ) + 0.4*np.cos( xcoord )**2 + np.cos( xcoord )**3 + 0.1*np.cos( xcoord )**4;
+    ycoord = 0.25*np.cos( xcoord ) \
+        + 0.4*np.cos( xcoord )**2 \
+        + np.cos( xcoord )**3 \
+        + 0.1*np.cos( xcoord )**4;
     return ycoord;
 
 def pathSteps(xstate, N=P+1):
@@ -89,14 +92,20 @@ if __name__ == "__main__":
         fig=fig, axs=axs, tail_length=100, zorder=25 );
     plt.show( block=0 );
 
+    # Initialize forward path.
+    xpred = mpc_var.statePrediction( x0, uinit )
+    v_var.initForwardTail( xpred[:2,:] );
+
     # Simulation loop.
     x = x0;
     u = uList;
     input( "\nPress ENTER to enter simulation loop..." );
     for i in range( Nt ):
-        u = mpc_var.solve( x, u, verbose=0 );
+        u = mpc_var.solve( x, u, verbose=1 );
+        xpred = mpc_var.statePrediction( x, u );
         x = m_var.prop( x, u[:,0,None] );
-        v_var.update( x[:2] )
+        v_var.update( x[:2] );
+        v_var.updateForwardTail( xpred[:2,:] );
         v_var.draw();
     input( "\nPress ENTER to close program..." );
 
