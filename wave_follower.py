@@ -13,51 +13,94 @@ import Helpers.Optimizer as opt
 import Helpers.Vehicle2D as vhc
 
 # Hyper parameter(s)
+dt = 0.05;
+P = 10;
+k = 2;
+R = 1;
 Nx = 3;
 Nu = 2;
-P = 100;
-R = 1;
 
 
 # Model declaration.
 def model(x, u):
     xn = np.array( [
-        x[0] + dt*math.cos(x[2])*(u[0] + u[1]),
-        x[1] + dt*math.sin(x[2])*(u[0] + u[1]),
+        x[0] + dt*np.cos(x[2])*(u[0] + u[1]),
+        x[1] + dt*np.sin(x[2])*(u[0] + u[1]),
         x[2] + dt*1/R*(u[0] - u[1])
     ] );
     return xn;
 
-def cost(x, u):
-    pass;
+def cost(xList, uList):
+    x0 = xList[:,0,None];
+    pList = pathSteps( x0 );
+
+    C = [0];
+    for x, p in zip( xList.T, pList.T ):
+        C = C + (x[0] - p[0])**2 + (x[1] - p[1])**2;
+
+    return C;
 
 # Generate path list.
 def path(xcoord):
-    ycoord = 0.25*np.sin( xcoord ) + 0.4*np.sin( xcoord )**2 + np.sin( xcoord )**3 + 0.1*np.sin( xcoord )**4;
+    # ycoord = np.cos( xcoord );
+    ycoord = 0.25*np.cos( xcoord ) + 0.4*np.cos( xcoord )**2 + np.cos( xcoord )**3 + 0.1*np.cos( xcoord )**4;
     return ycoord;
 
-def pathSteps(xstate):
+def pathSteps(xstate, N=P+1):
+    beta = dt;
     xcoord = xstate[0];
-    pList = np.empty( (2, P) );
-    for i in range( P ):
+    pList = np.empty( (2, N) );
+    for i in range( N ):
         ycoord = path( xcoord );
         pList[:,i] = np.hstack( (xcoord, ycoord) );
-        xcoord = xcoord + 0.1;
+        xcoord = xcoord + beta;
     return pList;
 
 # Main execution loop.
 if __name__ == "__main__":
     # Initial position of Roomba.
-    x0 = np.array( [[0],[0],[0]] );
+    x0 = np.array( [[0],path([0]),[0]] );
 
     # Initialize MPC variables.
-    mpc_var = opt.ModelPredictiveControl( model, cost );
+    m_var = plant.Model( model, dt=dt );
+    mpc_var = opt.ModelPredictiveControl( model, cost,
+        P=P, k=k, Nx=Nx, Nu=Nu, dt=dt,
+        cost_type='horizon' );
+    mpc_var.setStepSize( 1.00 );
 
-    # Test path generator.
-    pList = pathSteps( xtest );
+    uinit = np.zeros( (Nu,P) );
+    mpc_var.setMaxIter( 100 );
+    uList = mpc_var.solve( x0, uinit, verbose=1 );
+    mpc_var.setMaxIter( 10 );
+
+    # Simulation series.
+    T = 10;  Nt = round( T/dt ) + 1;
+    tList = np.array( [[i for i in range( Nt )]] );
+    pList = pathSteps( x0, N=Nt );
+
+    # Vehicle variable and static initializations.
     fig, axs = plt.subplots();
     axs.plot( pList[0], pList[1],
         color='r', linestyle='--',
-        marker='x', markersize=5.0,
-        label='Desired Path' );
-    plt.show();
+        marker='x', markersize=2.5,
+        label='Desired Path',
+        zorder=10 );
+    v_var = vhc.Vehicle2D( model, x0[:2], radius=0.2,
+        fig=fig, axs=axs, tail_length=100, zorder=25 );
+    plt.show( block=0 );
+
+    # Simulation loop.
+    x = x0;
+    u = uList;
+    input( "\nPress ENTER to enter simulation loop..." );
+    for i in range( Nt ):
+        u = mpc_var.solve( x, u, verbose=0 );
+        x = m_var.prop( x, u[:,0,None] );
+        v_var.update( x[:2] )
+        v_var.draw();
+    input( "\nPress ENTER to close program..." );
+
+    # # Test path generator.
+    # axs.plot( xList[0], xList[1],
+    #     color='yellowgreen', marker='+' );
+    # plt.show();
