@@ -88,7 +88,7 @@ if __name__ == "__main__":
         markersize=2.5, label='Desired Path',
         zorder=10 );
     v_var = vhc.Vehicle2D( model, x0[:2],
-        radius=0.1, fig=fig, axs=axs, tail_length=100, zorder=25 );
+        radius=0.1, fig=fig, axs=axs, tail_length=1000, zorder=25 );
     v_var.draw();
 
     # Simulation loop.
