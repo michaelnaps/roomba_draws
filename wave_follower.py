@@ -8,12 +8,12 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 # MPC class imports.
-import Helpers.Plant as plant
-import Helpers.Optimizer as opt
-import Helpers.Vehicle2D as vhc
+import MPC.Plant as plant
+import MPC.Optimizer as opt
+import MPC.Vehicle2D as vhc
 
 # Hyper parameter(s)
-dt = 0.05;
+dt = 0.025;
 P = 10;
 k = 2;
 R = 1;
@@ -32,7 +32,7 @@ def model(x, u):
 
 def cost(xList, uList):
     x0 = xList[:,0,None];
-    pList = pathSteps( x0 );
+    pList = pathSteps( x0, beta=k*dt );
 
     C = [0];
     for x, p in zip( xList.T, pList.T ):
@@ -49,8 +49,7 @@ def path(xcoord):
         + 0.1*np.cos( xcoord )**4;
     return ycoord;
 
-def pathSteps(xstate, N=P+1):
-    beta = dt;
+def pathSteps(xstate, N=P+1, beta=dt):
     xcoord = xstate[0];
     pList = np.empty( (2, N) );
     for i in range( N ):
@@ -72,7 +71,7 @@ if __name__ == "__main__":
     mpc_var.setStepSize( 1.00 );
 
     uinit = np.zeros( (Nu,P) );
-    mpc_var.setMaxIter( 100 );
+    mpc_var.setMaxIter( 1000 );
     uList = mpc_var.solve( x0, uinit, verbose=1 );
     mpc_var.setMaxIter( 10 );
 
@@ -80,21 +79,17 @@ if __name__ == "__main__":
     T = 10;  Nt = round( T/dt ) + 1;
     tList = np.array( [[i for i in range( Nt )]] );
     pList = pathSteps( x0, N=Nt );
+    xpred = mpc_var.statePrediction( x0, uinit )
 
     # Vehicle variable and static initializations.
     fig, axs = plt.subplots();
     axs.plot( pList[0], pList[1],
-        color='r', linestyle='--',
-        marker='x', markersize=2.5,
-        label='Desired Path',
+        color='r', linestyle='--', marker='x',
+        markersize=2.5, label='Desired Path',
         zorder=10 );
-    v_var = vhc.Vehicle2D( model, x0[:2], radius=0.2,
-        fig=fig, axs=axs, tail_length=100, zorder=25 );
-    plt.show( block=0 );
-
-    # Initialize forward path.
-    xpred = mpc_var.statePrediction( x0, uinit )
-    v_var.initForwardTail( xpred[:2,:] );
+    v_var = vhc.Vehicle2D( model, x0[:2],
+        radius=0.1, fig=fig, axs=axs, tail_length=100, zorder=25 );
+    v_var.draw();
 
     # Simulation loop.
     x = x0;
@@ -102,11 +97,8 @@ if __name__ == "__main__":
     input( "\nPress ENTER to enter simulation loop..." );
     for i in range( Nt ):
         u = mpc_var.solve( x, u, verbose=1 );
-        xpred = mpc_var.statePrediction( x, u );
         x = m_var.prop( x, u[:,0,None] );
         v_var.update( x[:2] );
-        v_var.updateForwardTail( xpred[:2,:] );
-        v_var.draw();
     input( "\nPress ENTER to close program..." );
 
     # # Test path generator.
