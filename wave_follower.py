@@ -15,7 +15,7 @@ import MPC.Vehicle2D as vhc
 # Hyper parameter(s)
 dt = 0.025;
 P = 10;
-k = 2;
+k = 3;
 R = 1;
 Nx = 3;
 Nu = 2;
