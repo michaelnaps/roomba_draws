@@ -14,9 +14,9 @@ import MPC.Vehicle2D as vhc
 
 # Hyper parameter(s)
 dt = 0.02;
-P = 10;
+P = 12;
 k = 2;
-R = 0.1;
+R = 0.25;
 Nx = 3;
 Nu = 2;
 
@@ -71,7 +71,7 @@ if __name__ == "__main__":
     mpc_var.setStepSize( 1.00 );
 
     uinit = np.zeros( (Nu,P) );
-    mpc_var.setMaxIter( 100 );
+    mpc_var.setMaxIter( 1000 );
     uList = mpc_var.solve( x0, uinit, verbose=1 );
     mpc_var.setMaxIter( 10 );
 
@@ -88,7 +88,7 @@ if __name__ == "__main__":
         markersize=2.5, label='Desired Path',
         zorder=10 );
     v_var = vhc.Vehicle2D( model, x0[:2],
-        radius=0.1, fig=fig, axs=axs, tail_length=1000, zorder=25 );
+        radius=R, fig=fig, axs=axs, tail_length=1000, zorder=25 );
 
     # Initialize forward tail and plot.
     xpred = mpc_var.statePrediction( x0, uList )[:2,:];
@@ -100,8 +100,10 @@ if __name__ == "__main__":
     u = uList;
     input( "\nPress ENTER to start simulation loop..." );
     for i in range( Nt ):
+        # Calculate optimal controls.
         u = mpc_var.solve( x, u, verbose=1 );
 
+        # Plot forward tail.
         xpred = mpc_var.statePrediction( x, u )[:2,:];
         v_var.updateForwardTail( xpred );
 
