@@ -47,6 +47,7 @@ def path(xcoord):
         + 0.4*np.cos( xcoord )**2 \
         + np.cos( xcoord )**3 \
         + 0.1*np.cos( xcoord )**4;
+    # ycoord = np.sign( xcoord );
     return ycoord;
 
 def pathSteps(xstate, N=P+1, beta=dt):
@@ -62,6 +63,7 @@ def pathSteps(xstate, N=P+1, beta=dt):
 if __name__ == "__main__":
     # Initial position of Roomba.
     x0 = np.array( [[0],path([0]),[0]] );
+    # x0 = np.array( [[-1],path([-1]),[0]] );
 
     # Initialize MPC variables.
     m_var = plant.Model( model, dt=dt );
