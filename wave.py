@@ -71,7 +71,7 @@ if __name__ == "__main__":
     mpc_var.setStepSize( 1.00 );
 
     uinit = np.zeros( (Nu,P) );
-    mpc_var.setMaxIter( 1000 );
+    mpc_var.setMaxIter( 100 );
     uList = mpc_var.solve( x0, uinit, verbose=1 );
     mpc_var.setMaxIter( 10 );
 
@@ -89,6 +89,10 @@ if __name__ == "__main__":
         zorder=10 );
     v_var = vhc.Vehicle2D( model, x0[:2],
         radius=0.1, fig=fig, axs=axs, tail_length=1000, zorder=25 );
+
+    # Initialize forward tail and plot.
+    xpred = mpc_var.statePrediction( x0, uList )[:2,:];
+    v_var.initForwardTail( xpred )
     v_var.draw();
 
     # Simulation loop.
@@ -97,8 +101,16 @@ if __name__ == "__main__":
     input( "\nPress ENTER to enter simulation loop..." );
     for i in range( Nt ):
         u = mpc_var.solve( x, u, verbose=1 );
+
+        xpred = mpc_var.statePrediction( x, u )[:2,:];
+        v_var.updateForwardTail( xpred );
+
         x = m_var.prop( x, u[:,0,None] );
         v_var.update( x[:2] );
+
+        # Break if sim exceeds boundaries of T.
+        if x[0] > T:
+            break;
     input( "\nPress ENTER to close program..." );
 
     # # Test path generator.
