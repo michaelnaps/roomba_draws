@@ -79,7 +79,7 @@ if __name__ == "__main__":
     T = 10;  Nt = round( T/dt ) + 1;
     tList = np.array( [[i for i in range( Nt )]] );
     pList = pathSteps( x0, N=Nt );
-    xpred = mpc_var.statePrediction( x0, uinit )
+    # xpred = mpc_var.statePrediction( x0, uinit )
 
     # Vehicle variable and static initializations.
     fig, axs = plt.subplots();
@@ -98,7 +98,7 @@ if __name__ == "__main__":
     # Simulation loop.
     x = x0;
     u = uList;
-    input( "\nPress ENTER to enter simulation loop..." );
+    input( "\nPress ENTER to start simulation loop..." );
     for i in range( Nt ):
         u = mpc_var.solve( x, u, verbose=1 );
 
