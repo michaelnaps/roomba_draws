@@ -13,10 +13,10 @@ import MPC.Optimizer as opt
 import MPC.Vehicle2D as vhc
 
 # Hyper parameter(s)
-dt = 0.025;
+dt = 0.02;
 P = 10;
-k = 3;
-R = 1;
+k = 2;
+R = 0.1;
 Nx = 3;
 Nu = 2;
 
