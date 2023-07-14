@@ -109,6 +109,7 @@ if __name__ == "__main__":
         xpred = mpc_var.statePrediction( x, u )[:2,:];
         v_var.updateForwardTail( xpred );
 
+        # Update state and animation.
         x = m_var.prop( x, u[:,0,None] );
         v_var.update( x[:2] );
 
