@@ -20,6 +20,8 @@ Nu = 2;
 NAV = 0;
 MOB = 1;
 
+
+# Connect to IP address?
 connect( '10.70.78.133:9999', '10.70.78.133:1234' )
 
 
@@ -110,8 +112,3 @@ if __name__ == "__main__":
             stop_robot();
             break;
     input( "\nPress ENTER to close program..." );
-
-    # # Test path generator.
-    # axs.plot( xList[0], xList[1],
-    #     color='yellowgreen', marker='+' );
-    # plt.show();
