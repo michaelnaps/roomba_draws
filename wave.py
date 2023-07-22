@@ -2,21 +2,23 @@
 import sys
 from os.path import expanduser
 sys.path.insert(0, expanduser('~')+'/prog/mpc')
+sys.path.insert(0, expanduser('~')+'/prog/geom')
 
 # Standard imports.
 import numpy as np
 import matplotlib.pyplot as plt
 
 # MPC class imports.
+import GEOM.Vehicle2D as vhc
 import MPC.Plant as plant
 import MPC.Optimizer as opt
-import MPC.Vehicle2D as vhc
 
 # Hyper parameter(s)
 dt = 0.02
 P = 12
 k = 2
 R = 0.25
+L = R + 0.10  # marker offset
 Nx = 3
 Nu = 2
 
@@ -30,9 +32,18 @@ def model(x, u):
     ] )
     return xn
 
+def markerPosition(xList):
+    N = xList.shape[1]
+    mList = np.empty( (2, N) )
+    for i, x in enumerate( xList.T ):
+        mList[:,i] = np.array( [
+            x[0] - L*np.cos( x[2] ),
+            x[1] - L*np.sin( x[2] )
+        ] )
+    return mList
+
 def cost(xList, uList):
-    x0 = xList[:,0,None]
-    pList = pathSteps( x0, beta=k*dt )
+    pList = pathSteps( xList[:,0,None], beta=k*dt )
 
     C = [0]
     for x, p in zip( xList.T, pList.T ):
@@ -89,13 +100,17 @@ if __name__ == "__main__":
         color='r', linestyle='--', marker='x',
         markersize=2.5, label='Desired Path',
         zorder=10 )
-    v_var = vhc.Vehicle2D( model, x0[:2],
-        radius=R, fig=fig, axs=axs, tail_length=1000, zorder=25 )
+    v_var = vhc.Vehicle2D( x0[:2], radius=R,
+        fig=fig, axs=axs, tail_length=250, zorder=20 )
+    marker = vhc.Vehicle2D( markerPosition( x0 ), radius=R/5, color='k',
+        fig=fig, axs=axs, tail_length=1000, zorder=25 )
 
     # Initialize forward tail and plot.
     xpred = mpc_var.statePrediction( x0, uList )[:2,:]
     v_var.initForwardTail( xpred )
+    marker.linestyle = ':'  # manually set linestyle
     v_var.draw()
+    marker.draw()
 
     # Simulation loop.
     x = x0
@@ -103,7 +118,7 @@ if __name__ == "__main__":
     input( "\nPress ENTER to start simulation loop..." )
     for i in range( Nt ):
         # Calculate optimal controls.
-        u = mpc_var.solve( x, u, verbose=1 )
+        u = mpc_var.solve( x, u, verbose=0 )
 
         # Plot forward tail.
         xpred = mpc_var.statePrediction( x, u )[:2,:]
@@ -111,7 +126,8 @@ if __name__ == "__main__":
 
         # Update state and animation.
         x = m_var.prop( x, u[:,0,None] )
-        v_var.update( x[:2] )
+        v_var.update( x[:2], pause=0 )
+        marker.update( markerPosition( x ) )
 
         # Break if sim exceeds boundaries of T.
         if x[0] > T:
