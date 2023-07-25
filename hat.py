@@ -2,8 +2,10 @@
 import sys
 from os.path import expanduser
 sys.path.insert(0, expanduser('~')+'/prog/mpc')
+sys.path.insert(0, expanduser('~')+'/prog/four')
 
 # Standard imports.
+import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 
@@ -11,6 +13,7 @@ import matplotlib.pyplot as plt
 import MPC.Plant as plant
 import MPC.Optimizer as opt
 import MPC.Vehicle2D as vhc
+import FOUR.Transforms as four
 
 # Hyper parameter(s)
 dt = 0.02
@@ -20,6 +23,13 @@ R = 0.25
 Nx = 4
 Nu = 2
 
+file = expanduser('~')+'/prog/four/abby_pkg/sketchdata.csv'
+data = pd.read_csv( file )
+xTrain = (1/20)*data[ data['z']=='d' ].to_numpy()[:,:2].T
+nTrain = xTrain.shape[1]
+tTrain = np.array( [[i for i in range( nTrain )]] )
+fvar = four.RealFourier( tTrain, xTrain )
+fvar.ls( N=75 )
 
 # Model declaration.
 def model(x, u):
@@ -27,13 +37,14 @@ def model(x, u):
         x[0] + dt*np.cos(x[2])*(u[0] + u[1]),
         x[1] + dt*np.sin(x[2])*(u[0] + u[1]),
         x[2] + dt*1/R*(u[0] - u[1]),
-        x[3] + dt*1
+        x[3] + dt
     ] )
     return xn
 
 def cost(xList, uList):
     x0 = xList[:,0,None]
-    pList = pathSteps( x0, beta=k*dt )
+    tList = np.array( [[x0[3][0] + 10*i*dt for i in range( P )]] )
+    pList = fvar.solve( tList )
 
     C = [0]
     for x, p in zip( xList.T, pList.T ):
@@ -63,7 +74,7 @@ def pathSteps(xstate, N=P+1, beta=dt):
 # Main execution loop.
 if __name__ == "__main__":
     # Initial position of Roomba.
-    x0 = np.array( [[0],path([0]),[0]] )
+    x0 = np.vstack( (fvar.solve( np.array( [[0]] ) ), [np.pi/2+0.1], [0]) )
     # x0 = np.array( [[-1],path([-1]),[0]] )
 
     # Initialize MPC variables.
@@ -81,7 +92,7 @@ if __name__ == "__main__":
     # Simulation series.
     T = 10;  Nt = round( T/dt ) + 1
     tList = np.array( [[i for i in range( Nt )]] )
-    pList = pathSteps( x0, N=Nt )
+    pList = fvar.solve( tList )
     # xpred = mpc_var.statePrediction( x0, uinit )
 
     # Vehicle variable and static initializations.
@@ -90,8 +101,8 @@ if __name__ == "__main__":
         color='r', linestyle='--', marker='x',
         markersize=2.5, label='Desired Path',
         zorder=10 )
-    v_var = vhc.Vehicle2D( model, x0[:2],
-        radius=R, fig=fig, axs=axs, tail_length=1000, zorder=25 )
+    v_var = vhc.Vehicle2D( x0[:2], radius=R,
+        fig=fig, axs=axs, tail_length=1000, zorder=25 )
 
     # Initialize forward tail and plot.
     xpred = mpc_var.statePrediction( x0, uList )[:2,:]
