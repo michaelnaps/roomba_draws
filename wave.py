@@ -108,9 +108,10 @@ if __name__ == "__main__":
     # Initialize forward tail and plot.
     xpred = mpc_var.statePrediction( x0, uList )[:2,:]
     v_var.initForwardTail( xpred )
-    marker.linestyle = ':'  # manually set linestyle
+    marker.tail.setLineStyle( ':' )
     v_var.draw()
     marker.draw()
+    axs.axis( 'equal' )
 
     # Simulation loop.
     x = x0
@@ -126,8 +127,10 @@ if __name__ == "__main__":
 
         # Update state and animation.
         x = m_var.prop( x, u[:,0,None] )
-        v_var.update( x[:2], pause=0 )
+        v_var.update( x[:2] )
         marker.update( markerPosition( x ) )
+
+        plt.pause( 1e-3 )
 
         # Break if sim exceeds boundaries of T.
         if x[0] > T:
