@@ -108,7 +108,7 @@ if __name__ == "__main__":
     # Initialize forward tail and plot.
     xpred = mpc_var.statePrediction( x0, uList )[:2,:]
     v_var.initForwardTail( xpred, zorder=20 )
-    marker.linestyle = ':'  # manually set linestyle
+    marker.tail.setLineStyle( ':' )
     v_var.draw()
     marker.draw()
 
