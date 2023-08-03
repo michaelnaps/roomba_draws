@@ -3,6 +3,7 @@ import sys
 from os.path import expanduser
 sys.path.insert(0, expanduser('~')+'/prog/mpc')
 sys.path.insert(0, expanduser('~')+'/prog/four')
+sys.path.insert(0, expanduser('~')+'/prog/geom')
 
 # Standard imports.
 import pandas as pd
@@ -12,11 +13,13 @@ import matplotlib.pyplot as plt
 # MPC class imports.
 import MPC.Plant as plant
 import MPC.Optimizer as opt
-import MPC.Vehicle2D as vhc
+import GEOM.Vehicle2D as vhc
 import FOUR.Transforms as four
 
 # Hyper parameter(s)
-dt = 0.02
+A = 100
+Nsteps = 10
+dt = 0.025
 P = 12
 k = 2
 R = 0.25
@@ -29,21 +32,24 @@ xTrain = (1/20)*data[ data['z']=='d' ].to_numpy()[:,:2].T
 nTrain = xTrain.shape[1]
 tTrain = np.array( [[i for i in range( nTrain )]] )
 fvar = four.RealFourier( tTrain, xTrain )
-fvar.ls( N=75 )
+fvar.ls( N=50 )
 
 # Model declaration.
 def model(x, u):
+    dx = np.cos(x[2])*(u[0] + u[1])
+    dy = np.sin(x[2])*(u[0] + u[1])
+    dth = 1/R*(u[0] - u[1])
     xn = np.array( [
-        x[0] + dt*np.cos(x[2])*(u[0] + u[1]),
-        x[1] + dt*np.sin(x[2])*(u[0] + u[1]),
-        x[2] + dt*1/R*(u[0] - u[1]),
-        x[3] + dt
+        x[0] + dt*dx,
+        x[1] + dt*dy,
+        x[2] + dt*dth,
+        x[3] + dt#*np.sqrt( dx**2 + dy**2 )
     ] )
     return xn
 
 def cost(xList, uList):
     x0 = xList[:,0,None]
-    tList = np.array( [[x0[3][0] + 10*i*dt for i in range( P )]] )
+    tList = np.array( [[x0[3][0] + A*i*dt for i in range( P )]] )
     pList = fvar.solve( tList )
 
     C = [0]
@@ -51,25 +57,6 @@ def cost(xList, uList):
         C = C + (x[0] - p[0])**2 + (x[1] - p[1])**2
 
     return C
-
-# Generate path list.
-def path(xcoord):
-    # ycoord = np.cos( xcoord )
-    ycoord = 0.25*np.cos( xcoord ) \
-        + 0.4*np.cos( xcoord )**2 \
-        + np.cos( xcoord )**3 \
-        + 0.1*np.cos( xcoord )**4
-    # ycoord = np.sign( xcoord )
-    return ycoord
-
-def pathSteps(xstate, N=P+1, beta=dt):
-    xcoord = xstate[0]
-    pList = np.empty( (2, N) )
-    for i in range( N ):
-        ycoord = path( xcoord )
-        pList[:,i] = np.hstack( (xcoord, ycoord) )
-        xcoord = xcoord + beta
-    return pList
 
 # Main execution loop.
 if __name__ == "__main__":
@@ -106,8 +93,12 @@ if __name__ == "__main__":
 
     # Initialize forward tail and plot.
     xpred = mpc_var.statePrediction( x0, uList )[:2,:]
-    v_var.initForwardTail( xpred )
+    v_var.initForwardTail( xpred, zorder=25 )
     v_var.draw()
+
+    # plt.axis( [-6, 6, -6, 6] )
+    plt.gca().set_aspect( 'equal', adjustable='box' )
+    plt.show( block=0 )
 
     # Simulation loop.
     x = x0
@@ -122,12 +113,11 @@ if __name__ == "__main__":
         v_var.updateForwardTail( xpred )
 
         # Update state and animation.
-        x = m_var.prop( x, u[:,0,None] )
+        for _ in range( Nsteps ):
+            x = m_var.prop( x, u[:,0,None] )
         v_var.update( x[:2] )
+        plt.pause( 1e-3 )
 
-        # Break if sim exceeds boundaries of T.
-        if x[0] > T:
-            break
     input( "\nPress ENTER to close program..." )
 
     # # Test path generator.
