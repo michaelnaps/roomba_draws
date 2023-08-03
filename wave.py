@@ -129,10 +129,11 @@ if __name__ == "__main__":
         v_var.updateForwardTail( xpred )
 
         # Update state and animation.
-        x = m_var.prop( x, u[:,0,None] )
-        v_var.update( x[:2] )
-        marker.update( markerPosition( x ) )
-        plt.pause( 1e-3 )
+        if i % 10 == 0:
+            x = m_var.prop( x, u[:,0,None] )
+            v_var.update( x[:2] )
+            marker.update( markerPosition( x ) )
+            plt.pause( 1e-3 )
 
         # Break if sim exceeds boundaries of T.
         if x[0] > T:
