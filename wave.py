@@ -55,10 +55,11 @@ def cost(xList, uList):
 # Generate path list.
 def path(xcoord):
     xcoord = np.array( xcoord )/A
-    ycoord = 0.25*np.cos( xcoord ) \
-        + 0.4*np.cos( xcoord )**2 \
-        + np.cos( xcoord )**3 \
-        + 0.1*np.cos( xcoord )**4
+    ycoord = np.cos( xcoord/A ) - 1
+    # ycoord = 0.25*np.cos( xcoord ) \
+    #     + 0.4*np.cos( xcoord )**2 \
+    #     + np.cos( xcoord )**3 \
+    #     + 0.1*np.cos( xcoord )**4
     return A*ycoord
 
 def pathSteps(xstate, N=P+1, beta=dt):

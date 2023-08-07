@@ -43,11 +43,11 @@ def cost(xList, uList):
 
 # Generate path list.
 def path(xcoord):
-    # ycoord = np.cos( xcoord )
-    ycoord = 0.25*np.cos( xcoord ) \
-        + 0.4*np.cos( xcoord )**2 \
-        + np.cos( xcoord )**3 \
-        + 0.1*np.cos( xcoord )**4 - 1.75
+    ycoord = np.cos( xcoord ) - 1
+    # ycoord = 0.25*np.cos( xcoord ) \
+    #     + 0.4*np.cos( xcoord )**2 \
+    #     + np.cos( xcoord )**3 \
+    #     + 0.1*np.cos( xcoord )**4 - 1.75
     # ycoord = np.sign( xcoord )
     return ycoord
 
