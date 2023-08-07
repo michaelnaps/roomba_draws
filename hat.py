@@ -69,7 +69,7 @@ if __name__ == "__main__":
     mpc_var = opt.ModelPredictiveControl( model, cost,
         P=P, k=k, Nx=Nx, Nu=Nu, dt=dt,
         cost_type='horizon' )
-    mpc_var.setStepSize( 1.00 )
+    mpc_var.setStepSize( 0.1 )
 
     uinit = np.zeros( (Nu,P) )
     mpc_var.setMaxIter( 1000 )
