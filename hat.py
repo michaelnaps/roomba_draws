@@ -17,22 +17,33 @@ import GEOM.Vehicle2D as vhc
 import FOUR.Transforms as four
 
 # Hyper parameter(s)
-A = 100
-Nsteps = 10
-dt = 0.025
+dt = 0.02
 P = 12
 k = 2
 R = 0.25
 Nx = 4
 Nu = 2
 
+W1 = 1/20
+W2 = W1*dt
+
+# Read file data.
 file = expanduser('~')+'/prog/four/abby_pkg/sketchdata.csv'
 data = pd.read_csv( file )
-xTrain = (1/20)*data[ data['z']=='d' ].to_numpy()[:,:2].T
+xTrain = W1*data[ data['z']=='d' ].to_numpy()[:,:2].T
+
+# Generate time-series data.
 nTrain = xTrain.shape[1]
-tTrain = np.array( [[i for i in range( nTrain )]] )
+tTrain = W2*np.array( [[i for i in range( nTrain )]] )
+
+# Solve Fourier Series.
 fvar = four.RealFourier( tTrain, xTrain )
 fvar.ls( N=50 )
+
+# # Plot series.
+# fig, axs = plt.subplots()
+# axs.plot( tTrain.T, xTrain.T )
+# plt.show()
 
 # Model declaration.
 def model(x, u):
@@ -49,7 +60,7 @@ def model(x, u):
 
 def cost(xList, uList):
     x0 = xList[:,0,None]
-    tList = np.array( [[x0[3][0] + A*i*dt for i in range( P )]] )
+    tList = np.array( [[x0[3][0] + i*dt for i in range( P )]] )
     pList = fvar.solve( tList )
 
     C = [0]
@@ -69,7 +80,7 @@ if __name__ == "__main__":
     mpc_var = opt.ModelPredictiveControl( model, cost,
         P=P, k=k, Nx=Nx, Nu=Nu, dt=dt,
         cost_type='horizon' )
-    mpc_var.setStepSize( 0.1 )
+    mpc_var.setStepSize( 0.01 )
 
     uinit = np.zeros( (Nu,P) )
     mpc_var.setMaxIter( 1000 )
@@ -113,8 +124,7 @@ if __name__ == "__main__":
         v_var.updateForwardTail( xpred )
 
         # Update state and animation.
-        for _ in range( Nsteps ):
-            x = m_var.prop( x, u[:,0,None] )
+        x = m_var.prop( x, u[:,0,None] )
         v_var.update( x[:2] )
         plt.pause( 1e-3 )
 

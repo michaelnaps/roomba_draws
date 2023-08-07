@@ -47,7 +47,7 @@ def path(xcoord):
     ycoord = 0.25*np.cos( xcoord ) \
         + 0.4*np.cos( xcoord )**2 \
         + np.cos( xcoord )**3 \
-        + 0.1*np.cos( xcoord )**4
+        + 0.1*np.cos( xcoord )**4 - 1.75
     # ycoord = np.sign( xcoord )
     return ycoord
 
@@ -62,23 +62,22 @@ def pathSteps(xstate, N=P+1, beta=dt):
 
 
 # Motor control functions.
-def stop_robot():
+def stop_robot(publisher):
     command = 'motorctrl 0 0'
-    send_command_to_robot(command, MOB)
+    publisher(command, MOB)
 
-def move_robot(u):
+def move_robot(publisher, u):
     vMax = 100
     uMax = 3.0
     v = vMax/uMax*u
     command = 'motorctrl ' + str( v[0][0] ) + ' ' + str( v[0][0] )
-    send_command_to_robot( command, MOB )
+    publisher( command, MOB )
 
 
-# Main execution loop.
-if __name__ == "__main__":
-    # Initial position of Roomba.
+# Main execution function.
+def run(publisher):
+    # Initial position.
     x0 = np.array( [[0],path([0]),[0],[0]] )
-    # x0 = np.array( [[-1],path([-1]),[0]] )
 
     # Initialize MPC variables.
     m_var = plant.Model( model, dt=dt )
@@ -90,24 +89,22 @@ if __name__ == "__main__":
     # Generate the initial guess before the loop.
     uinit = np.zeros( (Nu,P) )
     mpc_var.setMaxIter( 1000 )
-    uList = mpc_var.solve( x0, uinit, verbose=1 )
+    uList = mpc_var.solve( x0, uinit, verbose=0 )
     mpc_var.setMaxIter( 10 )
 
     # Simulation loop.
     T = 10
     x = x0
     u = uList
-    input( "\nPress ENTER to start runner loop..." )
     for i in range( Nt ):
         # Calculate optimal controls from MPC.
-        u = mpc_var.solve( x, u, verbose=1 )
+        u = mpc_var.solve( x, u, verbose=0 )
 
         # Update state and animation.
-        move_robot( u )  # Update the robot wheel velocities.
+        move_robot( publisher, u )  # Update the robot wheel velocities.
         x = mvar.prop( x, u[:,0,None] )
 
         # Break if sim exceeds boundaries of T.
         if x[0] > T:
-            stop_robot()
+            stop_robot(publisher)
             break
-    input( "\nPress ENTER to close program..." )
