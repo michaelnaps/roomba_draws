@@ -25,7 +25,7 @@ Nx = 4
 Nu = 2
 
 W1 = 1/20
-W2 = W1*dt
+W2 = (1/6)*W1
 
 # Read file data.
 file = expanduser('~')+'/prog/four/abby_pkg/sketchdata.csv'
@@ -60,7 +60,7 @@ def model(x, u):
 
 def cost(xList, uList):
     x0 = xList[:,0,None]
-    tList = np.array( [[x0[3][0] + i*dt for i in range( P )]] )
+    tList = np.array( [[x0[3][0] + dt*i for i in range( P+1 )]] )
     pList = fvar.solve( tList )
 
     C = [0]
@@ -72,8 +72,14 @@ def cost(xList, uList):
 # Main execution loop.
 if __name__ == "__main__":
     # Initial position of Roomba.
-    x0 = np.vstack( (fvar.solve( np.array( [[0]] ) ), [np.pi/2+0.1], [0]) )
-    # x0 = np.array( [[-1],path([-1]),[0]] )
+    t0 = np.array( [[0]] )
+    t1 = t0 + dt
+    xy0 = fvar.solve( t0 )
+    xy1 = fvar.solve( t1 )
+    th0 = np.arctan( (xy1[1] - xy0[1])/(xy1[0] - xy0[0]) ) + np.pi
+    x0 = np.vstack( (xy0, th0, t0) )
+    print( x0 )
+    # exit()
 
     # Initialize MPC variables.
     m_var = plant.Model( model, dt=dt )
@@ -85,21 +91,21 @@ if __name__ == "__main__":
     uinit = np.zeros( (Nu,P) )
     mpc_var.setMaxIter( 1000 )
     uList = mpc_var.solve( x0, uinit, verbose=1 )
-    mpc_var.setMaxIter( 10 )
+    mpc_var.setMaxIter( 40 )
 
     # Simulation series.
     T = 10;  Nt = round( T/dt ) + 1
-    tList = np.array( [[i for i in range( Nt )]] )
+    tList = W2*np.array( [[i for i in range( Nt )]] )
     pList = fvar.solve( tList )
     # xpred = mpc_var.statePrediction( x0, uinit )
 
     # Vehicle variable and static initializations.
     fig, axs = plt.subplots()
-    axs.plot( pList[0], pList[1],
+    axs.plot( pList[0,None], pList[1,None],
         color='r', linestyle='--', marker='x',
         markersize=2.5, label='Desired Path',
         zorder=10 )
-    v_var = vhc.Vehicle2D( x0[:2], radius=R,
+    v_var = vhc.Vehicle2D( x0[:2], radius=R/10,
         fig=fig, axs=axs, tail_length=1000, zorder=25 )
 
     # Initialize forward tail and plot.
@@ -114,10 +120,11 @@ if __name__ == "__main__":
     # Simulation loop.
     x = x0
     u = uList
-    input( "\nPress ENTER to start simulation loop..." )
+    ans = input( "\nPress ENTER to start simulation loop..." )
+    if ans == 'n':  exit()
     for i in range( Nt ):
         # Calculate optimal controls.
-        u = mpc_var.solve( x, u, verbose=1 )
+        u = mpc_var.solve( x, u, verbose=0 )
 
         # Plot forward tail.
         xpred = mpc_var.statePrediction( x, u )[:2,:]
