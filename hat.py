@@ -21,6 +21,7 @@ dt = 0.02
 P = 12
 k = 2
 R = 0.25
+L = R + 0.15  # marker offset
 Nx = 4
 Nu = 2
 
@@ -57,6 +58,16 @@ def model(x, u):
         x[3] + dt#*np.sqrt( dx**2 + dy**2 )
     ] )
     return xn
+
+def markerPosition(xList):
+    N = xList.shape[1]
+    mList = np.empty( (2, N) )
+    for i, x in enumerate( xList.T ):
+        mList[:,i] = np.array( [
+            x[0] - L*np.cos( x[2] ),
+            x[1] - L*np.sin( x[2] )
+        ] )
+    return mList
 
 def cost(xList, uList):
     x0 = xList[:,0,None]
@@ -96,7 +107,7 @@ if __name__ == "__main__":
     # Simulation series.
     T = 10;  Nt = round( T/dt ) + 1
     tList = W2*np.array( [[i for i in range( Nt )]] )
-    pList = fvar.solve( tList )
+    pList = fvar.solve( tTrain )
     # xpred = mpc_var.statePrediction( x0, uinit )
 
     # Vehicle variable and static initializations.
@@ -105,13 +116,18 @@ if __name__ == "__main__":
         color='r', linestyle='--', marker='x',
         markersize=2.5, label='Desired Path',
         zorder=10 )
-    v_var = vhc.Vehicle2D( x0[:2], radius=R/10,
+    v_var = vhc.Vehicle2D( x0[:2], radius=R,
         fig=fig, axs=axs, tail_length=1000, zorder=25 )
+    marker = vhc.Vehicle2D( markerPosition( x0 ), radius=R/5, color='k',
+        fig=fig, axs=axs, tail_length=2500, zorder=25 )
 
     # Initialize forward tail and plot.
     xpred = mpc_var.statePrediction( x0, uList )[:2,:]
     v_var.initForwardTail( xpred, zorder=25 )
+    # marker.tail.setLineStyle( ':' )
+    marker.tail.setLineWidth( 1.5 )
     v_var.draw()
+    marker.draw()
 
     # plt.axis( [-6, 6, -6, 6] )
     plt.gca().set_aspect( 'equal', adjustable='box' )
@@ -120,7 +136,7 @@ if __name__ == "__main__":
     # Simulation loop.
     x = x0
     u = uList
-    ans = input( "\nPress ENTER to start simulation loop..." )
+    ans = input( "\nPress ENTER to start simulation loop... " )
     if ans == 'n':  exit()
     for i in range( Nt ):
         # Calculate optimal controls.
@@ -133,11 +149,6 @@ if __name__ == "__main__":
         # Update state and animation.
         x = m_var.prop( x, u[:,0,None] )
         v_var.update( x[:2] )
+        marker.update( markerPosition( x ) )
         plt.pause( 1e-3 )
-
     input( "\nPress ENTER to close program..." )
-
-    # # Test path generator.
-    # axs.plot( xList[0], xList[1],
-    #     color='yellowgreen', marker='+' )
-    # plt.show()
