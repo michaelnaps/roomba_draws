@@ -27,32 +27,37 @@ if __name__ == "__main__":
     nTrain = xTrain.shape[1]
     tTrain = np.array( [[i for i in range( nTrain )]] )
     fvar = four.RealFourier( tTrain, xTrain )
-    fvar.ls( N=25 )
+    fvar.dmd( N=25 )
 
     # Simulation series.
     t0 = np.array( [[0]] )
-    x0 = fvar.solve( np.array( [[0]] ) )
+    x0 = fvar.solve( t0 )
     Nt = round( nTrain/dt )
     tList = np.array( [[i*dt for i in range( Nt )]] )
     pList = fvar.solve( tTrain )
 
     # Vehicle variable and static initializations.
     fig, axs = plt.subplots()
-    axs.plot( pList[0], pList[1],
+    axs.plot( xTrain[0], xTrain[1],
         color='r', linestyle='None', marker='x',
         markersize=2.5, label='Desired Path',
         zorder=10 )
     v_var = vhc.Vehicle2D( x0, radius=0.1,
         fig=fig, axs=axs, tail_length=1000, zorder=25 )
-    # x_vectors = vect.Vectors( fvar.vectors( t0 )[0] )
-    # y_vectors = vect.Vectors( fvar.vectors( t0 )[1] )
+
+    # Draw Fourier vectors.
+    fvect = fvar.vectors( t0 )
+    xvect = vect.Vectors( fvect[0], fig=fig, axs=axs, color='k' )
+    yvect = vect.Vectors( np.flipud( fvect[1] ) + [[-5],[0]], fig=fig, axs=axs, color='k' )
 
     # Initialize forward tail and plot.
     axs.axes.xaxis.set_ticklabels( [] )
     axs.axes.yaxis.set_ticklabels( [] )
     v_var.draw()
+    xvect.draw()
+    yvect.draw()
 
-    # plt.axis( [-6, 6, -6, 6] )
+    plt.axis( [-10, 25, -10, 25] )
     plt.gca().set_aspect( 'equal', adjustable='box' )
     plt.show( block=0 )
 
@@ -61,7 +66,14 @@ if __name__ == "__main__":
     input( "\nPress ENTER to start simulation loop..." )
     for t in tList.T:
         x = fvar.solve( t[:,None] )
+        fvect = fvar.vectors( t[:,None] )
+        xvect.setVertices( fvect[0] )
+        yvect.setVertices( np.flipud( fvect[1] ) + [[-5],[0]] )
+
         v_var.update( x )
+        xvect.update()
+        yvect.update()
+
         plt.pause( 1e-3 )
 
     input( "\nPress ENTER to close program..." )
