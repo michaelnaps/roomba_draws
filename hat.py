@@ -105,7 +105,7 @@ if __name__ == "__main__":
     mpc_var.setMaxIter( 40 )
 
     # Simulation series.
-    T = 10;  Nt = round( T/dt ) + 1
+    T = 20;  Nt = round( T/dt ) + 1
     tList = W2*np.array( [[i for i in range( Nt )]] )
     pList = fvar.solve( tTrain )
     # xpred = mpc_var.statePrediction( x0, uinit )
