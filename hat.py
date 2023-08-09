@@ -100,11 +100,11 @@ if __name__ == "__main__":
     mpc_var.setStepSize( 0.01 )
 
     # Example list and first input set.
-    pList = fvar.solve( tTrain[:,::15] )
+    pList = fvar.solve( tTrain[:,::5] )
     uinit = np.zeros( (Nu,P) )
-    mpc_var.setMaxIter( 10 )
+    mpc_var.setMaxIter( 2500 )
     uList = mpc_var.solve( x0, uinit, verbose=1 )
-    mpc_var.setMaxIter( 40 )
+    mpc_var.setMaxIter( 50 )
 
     # Vehicle variable and static initializations.
     fig, axs = plt.subplots()
@@ -113,7 +113,7 @@ if __name__ == "__main__":
         markersize=2.5, label='Desired Path',
         zorder=10 )
     v_var = vhc.Vehicle2D( x0[:2], radius=R,
-        fig=fig, axs=axs, tail_length=1000, zorder=25 )
+        fig=fig, axs=axs, tail_length=2500, zorder=25 )
     marker = vhc.Vehicle2D( markerPosition( x0 ), radius=R/5, color='k',
         fig=fig, axs=axs, tail_length=2500, zorder=25 )
 

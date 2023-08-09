@@ -11,6 +11,7 @@ import matplotlib.pyplot as plt
 
 # MPC class imports.
 import GEOM.Vehicle2D as vhc
+import GEOM.Vectors as vect
 import FOUR.Transforms as four
 
 dt = 0.1
@@ -29,6 +30,7 @@ if __name__ == "__main__":
     fvar.ls( N=25 )
 
     # Simulation series.
+    t0 = np.array( [[0]] )
     x0 = fvar.solve( np.array( [[0]] ) )
     Nt = round( nTrain/dt )
     tList = np.array( [[i*dt for i in range( Nt )]] )
@@ -42,6 +44,8 @@ if __name__ == "__main__":
         zorder=10 )
     v_var = vhc.Vehicle2D( x0, radius=0.1,
         fig=fig, axs=axs, tail_length=1000, zorder=25 )
+    # x_vectors = vect.Vectors( fvar.vectors( t0 )[0] )
+    # y_vectors = vect.Vectors( fvar.vectors( t0 )[1] )
 
     # Initialize forward tail and plot.
     axs.axes.xaxis.set_ticklabels( [] )
