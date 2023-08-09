@@ -39,7 +39,7 @@ tTrain = W2*np.array( [[i for i in range( nTrain )]] )
 
 # Solve Fourier Series.
 fvar = four.RealFourier( tTrain, xTrain )
-fvar.ls( N=50 )
+fvar.dmd( N=50 )
 
 # # Plot series.
 # fig, axs = plt.subplots()
@@ -99,16 +99,12 @@ if __name__ == "__main__":
         cost_type='horizon' )
     mpc_var.setStepSize( 0.01 )
 
+    # Example list and first input set.
+    pList = fvar.solve( tTrain[:,::15] )
     uinit = np.zeros( (Nu,P) )
-    mpc_var.setMaxIter( 1000 )
+    mpc_var.setMaxIter( 10 )
     uList = mpc_var.solve( x0, uinit, verbose=1 )
     mpc_var.setMaxIter( 40 )
-
-    # Simulation series.
-    T = 20;  Nt = round( T/dt ) + 1
-    tList = W2*np.array( [[i for i in range( Nt )]] )
-    pList = fvar.solve( tTrain )
-    # xpred = mpc_var.statePrediction( x0, uinit )
 
     # Vehicle variable and static initializations.
     fig, axs = plt.subplots()
@@ -124,21 +120,23 @@ if __name__ == "__main__":
     # Initialize forward tail and plot.
     xpred = mpc_var.statePrediction( x0, uList )[:2,:]
     v_var.initForwardTail( xpred, zorder=25 )
-    # marker.tail.setLineStyle( ':' )
     marker.tail.setLineWidth( 1.5 )
     v_var.draw()
     marker.draw()
 
-    # plt.axis( [-6, 6, -6, 6] )
+    # Format and show plot.
     plt.gca().set_aspect( 'equal', adjustable='box' )
     plt.show( block=0 )
+
+    # Simulation variables.
+    T = 20;  Nt = round( T/dt ) + 1
 
     # Simulation loop.
     x = x0
     u = uList
     ans = input( "\nPress ENTER to start simulation loop... " )
     if ans == 'n':  exit()
-    for i in range( Nt ):
+    for _ in range( Nt ):
         # Calculate optimal controls.
         u = mpc_var.solve( x, u, verbose=0 )
 
