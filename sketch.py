@@ -48,16 +48,22 @@ if __name__ == "__main__":
     # Draw Fourier vectors.
     fvect = fvar.vectors( t0 )
     xvect = vect.Vectors( fvect[0], fig=fig, axs=axs, color='k' )
+    dxvect = vect.Vectors( np.hstack( (fvect[0][:,-1,None], x0) ),
+        fig=fig, axs=axs, color='grey' )
     yvect = vect.Vectors( np.flipud( fvect[1] ) + [[-5],[0]], fig=fig, axs=axs, color='k' )
+    dyvect = vect.Vectors( np.hstack( (np.flipud( fvect[1][:,-1,None] )+[[-5],[0]], x0) ),
+        fig=fig, axs=axs, color='grey' )
 
     # Initialize forward tail and plot.
     axs.axes.xaxis.set_ticklabels( [] )
     axs.axes.yaxis.set_ticklabels( [] )
     v_var.draw()
     xvect.draw()
+    dxvect.setLineStyle( ':' );  dxvect.draw()
     yvect.draw()
+    dyvect.setLineStyle( ':' );  dyvect.draw()
 
-    plt.axis( [-10, 25, -10, 25] )
+    plt.axis( [-10, 20, -10, 20] )
     plt.gca().set_aspect( 'equal', adjustable='box' )
     plt.show( block=0 )
 
@@ -67,12 +73,17 @@ if __name__ == "__main__":
     for t in tList.T:
         x = fvar.solve( t[:,None] )
         fvect = fvar.vectors( t[:,None] )
+
         xvect.setVertices( fvect[0] )
+        dxvect.setVertices( np.hstack( (fvect[0][:,-1,None], x) ) )
         yvect.setVertices( np.flipud( fvect[1] ) + [[-5],[0]] )
+        dyvect.setVertices( np.hstack( ( np.flipud( fvect[1][:,-1,None] )+[[-5],[0]], x) ) )
 
         v_var.update( x )
         xvect.update()
+        dxvect.update()
         yvect.update()
+        dyvect.update()
 
         plt.pause( 1e-3 )
 
