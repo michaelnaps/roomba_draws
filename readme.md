@@ -5,3 +5,8 @@ In this small summer project I unified the Fourier animations method discussed i
 <p align='center'>
     <img src=./.figures/drawhat_n50.gif width=450>
 </p>
+
+Legend:
+* Red line = reference points
+* Green dot/line = Vehicle position/path
+* Black dot/line = Marker position/path
